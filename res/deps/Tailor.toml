@@ -1,0 +1,8 @@
+name = "deps"
+version = "0.1.0"
+
+[dependencies]
+hello = "0.1.0"
+backpack = { version = "0.3.0" }
+lua = { revision = "main", url = "https://github.com/lua/lua.git" }
+zephyr = { path = "../zephyr/" }
