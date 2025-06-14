@@ -1,10 +1,5 @@
-import gleeunit
 import new_pkg
 import simplifile
-
-pub fn main() -> Nil {
-  gleeunit.main()
-}
 
 pub fn new_pkg_bin_test() {
   let pkg_name = "test_bin"

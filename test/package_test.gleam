@@ -1,10 +1,5 @@
 import dependency
-import gleeunit
 import package
-
-pub fn main() -> Nil {
-  gleeunit.main()
-}
 
 pub fn from_file_basic_test() {
   let expected_package =

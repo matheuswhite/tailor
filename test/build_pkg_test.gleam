@@ -1,14 +1,9 @@
 import build_pkg
 import gleam/result
 import gleam/string
-import gleeunit
 import mode
 import new_pkg
 import simplifile
-
-pub fn main() -> Nil {
-  gleeunit.main()
-}
 
 pub fn build_pkg_bin_test() {
   let pkg_name = "test_build_bin"
