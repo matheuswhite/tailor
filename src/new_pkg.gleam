@@ -1,3 +1,4 @@
+import filepath
 import gleam/bool
 import gleam/io
 import gleam/result
@@ -28,34 +29,35 @@ version = \"0.1.0\"
 [dependencies]
 "
 
-fn new_binary_package(pkg_name: String) -> Result(Nil, String) {
+fn new_binary_package(pkg_path: String) -> Result(Nil, String) {
   use _ <- result.try(
-    simplifile.is_directory(pkg_name)
+    simplifile.is_directory(pkg_path)
     |> result.unwrap(False)
     |> bool.negate
-    |> utils.bool2result("Directory already exists: " <> pkg_name),
+    |> utils.bool2result("Directory already exists: " <> pkg_path),
   )
 
   use _ <- result.try(
-    simplifile.create_directory_all(pkg_name <> "/src")
+    simplifile.create_directory_all(pkg_path <> "/src")
     |> result.replace_error("Failed to create src directory"),
   )
 
   use _ <- result.try(
-    simplifile.create_directory_all(pkg_name <> "/include")
+    simplifile.create_directory_all(pkg_path <> "/include")
     |> result.replace_error("Failed to create include directory"),
   )
 
-  let tailor_content =
-    bin_tailor_manifest |> string.replace(each: "$pkg_name", with: pkg_name)
-
   use _ <- result.try(
-    simplifile.write(to: pkg_name <> "/src/main.c", contents: bin_main_c)
+    simplifile.write(to: pkg_path <> "/src/main.c", contents: bin_main_c)
     |> result.replace_error("Failed to create main.c file"),
   )
 
+  let pkg_name = filepath.base_name(pkg_path)
+
+  let tailor_content =
+    bin_tailor_manifest |> string.replace(each: "$pkg_name", with: pkg_name)
   use _ <- result.try(
-    simplifile.write(to: pkg_name <> "/Tailor.toml", contents: tailor_content)
+    simplifile.write(to: pkg_path <> "/Tailor.toml", contents: tailor_content)
     |> result.replace_error("Failed to write Tailor.toml file"),
   )
 
@@ -87,21 +89,23 @@ type = \"lib\"
 [dependencies]
 "
 
-fn new_library_package(pkg_name: String) -> Result(Nil, String) {
+fn new_library_package(pkg_path: String) -> Result(Nil, String) {
   use _ <- result.try(
-    simplifile.is_directory(pkg_name)
+    simplifile.is_directory(pkg_path)
     |> result.unwrap(False)
     |> bool.negate
-    |> utils.bool2result("Directory already exists: " <> pkg_name),
+    |> utils.bool2result("Directory already exists: " <> pkg_path),
   )
 
   use _ <- result.try(
-    simplifile.create_directory_all(pkg_name <> "/src")
+    simplifile.create_directory_all(pkg_path <> "/src")
     |> result.replace_error("Failed to create src directory"),
   )
 
+  let pkg_name = filepath.base_name(pkg_path)
+
   use _ <- result.try(
-    simplifile.create_directory_all(pkg_name <> "/include/" <> pkg_name)
+    simplifile.create_directory_all(pkg_path <> "/include/" <> pkg_name)
     |> result.replace_error("Failed to create include directory"),
   )
 
@@ -121,7 +125,7 @@ fn new_library_package(pkg_name: String) -> Result(Nil, String) {
 
   use _ <- result.try(
     simplifile.write(
-      to: pkg_name <> "/src/" <> pkg_name <> ".c",
+      to: pkg_path <> "/src/" <> pkg_name <> ".c",
       contents: pkg_source,
     )
     |> result.replace_error("Failed to create source file"),
@@ -129,14 +133,14 @@ fn new_library_package(pkg_name: String) -> Result(Nil, String) {
 
   use _ <- result.try(
     simplifile.write(
-      to: pkg_name <> "/include/" <> pkg_name <> "/" <> pkg_name <> ".h",
+      to: pkg_path <> "/include/" <> pkg_name <> "/" <> pkg_name <> ".h",
       contents: pkg_header,
     )
     |> result.replace_error("Failed to create header file"),
   )
 
   use _ <- result.try(
-    simplifile.write(to: pkg_name <> "/Tailor.toml", contents: tailor_content)
+    simplifile.write(to: pkg_path <> "/Tailor.toml", contents: tailor_content)
     |> result.replace_error("Failed to write Tailor.toml file"),
   )
 
