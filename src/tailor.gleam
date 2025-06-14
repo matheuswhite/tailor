@@ -11,6 +11,10 @@ pub fn main() -> Nil {
     ["new", pkg_type, pkg_name] -> new_pkg.run(pkg_name, pkg_type)
     ["build"] | ["build", "--debug"] -> build_pkg.run(mode.Debug)
     ["build", "--release"] -> build_pkg.run(mode.Release)
+    ["build", dir] | ["build", "--debug", dir] ->
+      build_pkg.run_from_directory(mode.Debug, dir)
+    ["build", "--release", dir] ->
+      build_pkg.run_from_directory(mode.Release, dir)
     ["run"] | ["run", "--debug"] -> run_pkg.run(mode.Debug)
     ["run", "--release"] -> run_pkg.run(mode.Release)
     _ -> {

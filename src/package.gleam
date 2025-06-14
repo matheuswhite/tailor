@@ -26,7 +26,7 @@ pub type Package {
 pub fn from_file(filepath: String) -> Result(Package, String) {
   use content <- result.try(
     simplifile.read(from: filepath)
-    |> result.replace_error("File " <> filepath <> " not found"),
+    |> result.replace_error("[package:29] File " <> filepath <> " not found"),
   )
 
   from_content(content)

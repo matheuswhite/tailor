@@ -9,13 +9,13 @@ import shellout
 import simplifile
 import utils
 
-pub fn run(mode: mode.Mode) -> Result(Nil, String) {
+pub fn run_from_directory(mode: mode.Mode, path: String) -> Result(Nil, String) {
   let mode_name = mode.mode2string(mode)
-  use pkg <- result.try(package.from_file("Tailor.toml"))
+  use pkg <- result.try(package.from_file(path <> "/Tailor.toml"))
 
   let pkg = case pkg.pkg_type {
-    package.Bin -> create_binary_cmake_lists(mode_name)
-    package.Lib -> create_library_cmake_lists(mode_name)
+    package.Bin -> create_binary_cmake_lists(mode_name, path)
+    package.Lib -> create_library_cmake_lists(mode_name, path)
   }
 
   use pkg <- result.try(pkg)
@@ -28,7 +28,7 @@ pub fn run(mode: mode.Mode) -> Result(Nil, String) {
     shellout.command(
       run: "cmake",
       with: ["-S", "build/" <> mode_name, "-B", "build/" <> mode_name],
-      in: ".",
+      in: path,
       opt: [],
     )
     |> result.map(with: fn(output) { io.print(output) })
@@ -42,7 +42,7 @@ pub fn run(mode: mode.Mode) -> Result(Nil, String) {
     shellout.command(
       run: "cmake",
       with: ["--build", "build/" <> mode_name],
-      in: ".",
+      in: path,
       opt: [],
     )
     |> result.map(with: fn(output) { io.print(output) })
@@ -50,6 +50,10 @@ pub fn run(mode: mode.Mode) -> Result(Nil, String) {
   )
 
   Ok(Nil)
+}
+
+pub fn run(mode: mode.Mode) -> Result(Nil, String) {
+  run_from_directory(mode, ".")
 }
 
 const bin_cmake_lists = "cmake_minimum_required(VERSION 3.10)
@@ -67,30 +71,31 @@ endif()
 
 fn create_binary_cmake_lists(
   mode_name: String,
+  path: String,
 ) -> Result(package.Package, String) {
+  let abs_path =
+    simplifile.current_directory() |> result.unwrap(".") <> "/" <> path
   use _ <- result.try(
-    simplifile.is_file("Tailor.toml")
+    simplifile.is_file(abs_path <> "/Tailor.toml")
     |> result.unwrap(False)
-    |> utils.bool2result("Tailor.toml file not found"),
+    |> utils.bool2result(abs_path <> "/Tailor.toml file not found"),
   )
 
-  use pkg <- result.try(package.from_file("Tailor.toml"))
+  use pkg <- result.try(package.from_file(abs_path <> "/Tailor.toml"))
   let sources =
     pkg.sources
-    |> list.map(fn(src) {
-      simplifile.current_directory() |> result.unwrap(".") <> "/" <> src
-    })
+    |> list.map(fn(src) { abs_path <> "/" <> src })
     |> string.join("\n")
   let includes =
     pkg.includes
-    |> list.map(fn(inc) {
-      simplifile.current_directory() |> result.unwrap(".") <> "/" <> inc
-    })
+    |> list.map(fn(inc) { abs_path <> "/" <> inc })
     |> string.join("\n")
 
   let _ = {
     use _ <- result.try(
-      simplifile.is_file("build/" <> mode_name <> "/CMakeLists.txt")
+      simplifile.is_file(
+        abs_path <> "/build/" <> mode_name <> "/CMakeLists.txt",
+      )
       |> result.unwrap(False)
       |> bool.negate
       |> utils.bool2result(
@@ -99,13 +104,13 @@ fn create_binary_cmake_lists(
     )
 
     use _ <- result.try(
-      simplifile.create_directory_all("build/" <> mode_name)
+      simplifile.create_directory_all(abs_path <> "/build/" <> mode_name)
       |> result.replace_error("Failed to create build directory"),
     )
 
     use _ <- result.try(
       simplifile.write(
-        to: "build/" <> mode_name <> "/CMakeLists.txt",
+        to: abs_path <> "/build/" <> mode_name <> "/CMakeLists.txt",
         contents: bin_cmake_lists
           |> string.replace(each: "$include", with: includes)
           |> string.replace(each: "$sources", with: sources)
@@ -135,30 +140,31 @@ endif()
 
 fn create_library_cmake_lists(
   mode_name: String,
+  path: String,
 ) -> Result(package.Package, String) {
+  let abs_path =
+    simplifile.current_directory() |> result.unwrap(".") <> "/" <> path
   use _ <- result.try(
-    simplifile.is_file("Tailor.toml")
+    simplifile.is_file(abs_path <> "/Tailor.toml")
     |> result.unwrap(False)
-    |> utils.bool2result("Tailor.toml file not found"),
+    |> utils.bool2result(abs_path <> "/Tailor.toml file not found"),
   )
 
-  use pkg <- result.try(package.from_file("Tailor.toml"))
+  use pkg <- result.try(package.from_file(abs_path <> "/Tailor.toml"))
   let sources =
     pkg.sources
-    |> list.map(fn(src) {
-      simplifile.current_directory() |> result.unwrap(".") <> "/" <> src
-    })
+    |> list.map(fn(src) { abs_path <> "/" <> src })
     |> string.join("\n")
   let includes =
     pkg.includes
-    |> list.map(fn(inc) {
-      simplifile.current_directory() |> result.unwrap(".") <> "/" <> inc
-    })
+    |> list.map(fn(inc) { abs_path <> "/" <> inc })
     |> string.join("\n")
 
   let _ = {
     use _ <- result.try(
-      simplifile.is_file("build/" <> mode_name <> "/CMakeLists.txt")
+      simplifile.is_file(
+        abs_path <> "/build/" <> mode_name <> "/CMakeLists.txt",
+      )
       |> result.unwrap(False)
       |> bool.negate
       |> utils.bool2result(
@@ -167,13 +173,13 @@ fn create_library_cmake_lists(
     )
 
     use _ <- result.try(
-      simplifile.create_directory_all("build/" <> mode_name)
+      simplifile.create_directory_all(abs_path <> "/build/" <> mode_name)
       |> result.replace_error("Failed to create build directory"),
     )
 
     use _ <- result.try(
       simplifile.write(
-        to: "build/" <> mode_name <> "/CMakeLists.txt",
+        to: abs_path <> "/build/" <> mode_name <> "/CMakeLists.txt",
         contents: lib_cmake_lists
           |> string.replace(each: "$include", with: includes)
           |> string.replace(each: "$sources", with: sources)
